@@ -596,13 +596,74 @@ def evaluate(inp_sentence):
 
   return tf.squeeze(output, axis=0), attention_weights
 
-def add_diacritic(sentence, plot=''):
+
+def preprocessing(str_input):
+  
+  intab_l = "ạảãàáâậầấẩẫăắằặẳẵóòọõỏôộổỗồốơờớợởỡéèẻẹẽêếềệểễúùụủũưựữửừứíìịỉĩýỳỷỵỹđ"
+  intab_u = "ẠẢÃÀÁÂẬẦẤẨẪĂẮẰẶẲẴÓÒỌÕỎÔỘỔỖỒỐƠỜỚỢỞỠÉÈẺẸẼÊẾỀỆỂỄÚÙỤỦŨƯỰỮỬỪỨÍÌỊỈĨÝỲỶỴỸĐ"
+  intab = list(intab_l+intab_u)
+
+  outtab_l = "a"*17 + "o"*17 + "e"*11 + "u"*11 + "i"*5 + "y"*5 + "d" 
+  outtab_u = "A"*17 + "O"*17 + "E"*11 + "U"*11 + "I"*5 + "Y"*5 + "D"
+  outtab = outtab_l + outtab_u
+
+  # remove whitespace
+  str_input = ' '.join(str_input.split())
+
+  str_restore = '''!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~ ''' + intab_l + intab_u
+  d_restore = dict()
+
+  for i, v in enumerate(str_input):
+    if v in str_restore:
+      d_restore[i] = v
+
+  # xóa dấu nếu có
+  r = re.compile("|".join(intab))
+  replace_dict = dict(zip(intab, outtab))
+  str_input = r.sub(lambda m: replace_dict[m.group()], str_input)
+
+  # xóa các ký tự đặc biệt
+  for v in d_restore.values():
+    if v != ' ':
+      str_input = str_input.replace(v, '')
+  
+  return str_input.strip(), d_restore
+
+
+def postprocessing(str_output, d_restore, restore_tone=False, keep_special_character=True):
+  str_restore = '''!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~ '''
+  index_special_character = []
+
+  str_output = str_output.replace(' ', '')
+  
+  for k, v in d_restore.items():
+    if v in str_restore:
+      str_output = str_output[:k] + v + str_output[k:]
+      index_special_character.append(k)
+    if restore_tone:
+      str_output = str_output.replace(str_output[k], v)
+
+  str_output = np.array(list(str_output))
+  if not keep_special_character:
+    str_output[index_special_character] = ''
+
+  return ''.join(str_output)
+
+
+def add_diacritic(sentence, restore_tone=False, keep_special_character=True):
+  # preprocessing
+  sentence, d_restore = preprocessing(sentence)
+
+  # predict
   result, attention_weights = evaluate(sentence)
   predicted_sentence = tokenizer_opt.decode([i for i in result 
                                             if i < tokenizer_opt.vocab_size])  
   # print('Input: {}'.format(sentence))
   # print('Predicted translation: {}'.format(predicted_sentence))
-  return predicted_sentence
+
+  # postprocessing
+  result = postprocessing(predicted_sentence, d_restore, restore_tone, keep_special_character)
+  return result
   # if plot:
   #   plot_attention_weights(attention_weights, sentence, result, plot)
 

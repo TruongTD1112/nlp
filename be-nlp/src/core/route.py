@@ -9,7 +9,10 @@ CORS(app)
 @app.route('/postData', methods=['POST'])
 def hello_world():
     string = request.json['string']
-    result = add_diacritic(string)
+    restore_tone = request.json['restore_tone']
+    keep_special_character = request.json['keep_special_character']
+
+    result = add_diacritic(string, restore_tone, keep_special_character)
     return jsonify({"result" : result})
 
 
