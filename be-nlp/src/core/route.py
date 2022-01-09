@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-from reference import add_diacritic
+from reference import predict
 from validate import preprocessing
 from flask_cors import CORS, cross_origin
 app = Flask(__name__)
@@ -15,7 +15,7 @@ def hello_world():
     totalWord = len(string.split(" "))
     preProcess = preprocessing(string)
     stringPreProcess = preProcess[0]
-    stringPredict = add_diacritic(stringPreProcess, False, True)
+    stringPredict = predict(stringPreProcess, restore_tone, keep_special_character)
     result = getResult(stringPredict, preProcess[1], preProcess[2], totalWord)
     return jsonify({"result" : result})
 
